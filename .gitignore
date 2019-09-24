@@ -1,0 +1,8 @@
+*.json
+ArabicJsonFiles
+ArabicJsonFiles.zip
+*.properties
+*.class
+*.i*
+Perceptions.kotlin*
+
