@@ -4,14 +4,17 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonWriter;
+import eu.fbk.dh.Perceptions.database.JDBCConnectionManager;
 import twitter4j.*;
 import twitter4j.auth.OAuth2Token;
 import twitter4j.conf.ConfigurationBuilder;
 
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.Charset;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Properties;
 
@@ -34,6 +37,8 @@ public class TwitterCrawler implements Runnable {
 
     @Override
     public void run() {
+
+
 
         Properties prop = new Properties();
         InputStream input = null;
@@ -92,10 +97,10 @@ public class TwitterCrawler implements Runnable {
             Calendar rightNow = Calendar.getInstance();
 
             timestamp =rightNow.get(Calendar.YEAR) + "_" +(rightNow.get(Calendar.MONTH)+1)+"_"+rightNow.get(Calendar.DAY_OF_MONTH)+"-"+rightNow.get(Calendar.HOUR_OF_DAY)+"_"+rightNow.get(Calendar.MINUTE);
-            OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream("ArabicJsonFiles/"+timestamp+"-"+this.tag + (this.sinceId != null ? "_" + sinceId : "") + ".json"), Charset.forName("UTF-8").newEncoder());
+//          OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream("ArabicJsonFiles/"+timestamp+"-"+this.tag + (this.sinceId != null ? "_" + sinceId : "") + ".json"), Charset.forName("UTF-8").newEncoder());
+            StringWriter os = new StringWriter();
 
-
-            JsonWriter writer = new JsonWriter(os);
+            JsonWriter writer = new JsonWriter(os); //this is the writer that will produce the output stream (tweets as strings) needed to store in the db
             writer.setIndent(" ");
             writer.beginArray();
 
@@ -124,24 +129,22 @@ public class TwitterCrawler implements Runnable {
                 try {
 
                     QueryResult result = twitter.search(query);
-                    System.out.println("Crawling: " + this.tag);
-
 
                     if (result.getTweets().size() <= 1) {
                         System.out.println("No more " + this.tag + " tweet");
                         perform = false;
                     }
 
+                    JsonObject jo=new JsonObject();
 
                     for (Status status : result.getTweets()) {
-                        JsonObject jo = parser.parse(TwitterObjectFactory.getRawJSON(status)).getAsJsonObject();
+                        jo = parser.parse(TwitterObjectFactory.getRawJSON(status)).getAsJsonObject();
                         min_id = Math.min(min_id, status.getId());
                         gson.toJson(jo, JsonObject.class, writer);
                         tweet_count++;
                     }
+
                     System.out.println(tag + ": " + result.getRateLimitStatus().getRemaining() + "/" + result.getRateLimitStatus().getLimit() + "  total_tweets:" + tweet_count);
-                    System.out.println("Crawling "+this.tag+" completed and information was stored in: " + getFilePath());
-                    System.out.println("*****************************************************************************************************************************");
                     if (result.getRateLimitStatus().getRemaining() <= 10) {
                         System.out.println("...Ufff...Cool Down tag " + this.tag + "...." + "Wait for :" + result.getRateLimitStatus().getSecondsUntilReset() + "s");
                         Thread.sleep((result.getRateLimitStatus().getSecondsUntilReset() * 1000) + 5000);
@@ -167,6 +170,12 @@ public class TwitterCrawler implements Runnable {
             writer.endArray();
             writer.close();
 
+            storeDateOfCrawlAndTweetsInDb(getFilePath().replace(".json",""),os.toString(),tweet_count); //store tweets in db
+
+            BufferedWriter fileWriter = new BufferedWriter(new FileWriter("ArabicJsonFiles/"+timestamp+"-"+this.tag + (this.sinceId != null ? "_" + sinceId : "") + ".json"));
+            fileWriter.write(os.toString()); //this is the write responsible of storing the output stream (tweets) in files for extra safety
+
+            fileWriter.close();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -176,6 +185,20 @@ public class TwitterCrawler implements Runnable {
     }
 
     public String getFilePath(){
-        return "ArabicJsonFiles/"+timestamp+"-"+this.tag + (this.sinceId != null ? "_" + sinceId : "") + ".json";
+        return timestamp+"-"+this.tag + (this.sinceId != null ? "_" + sinceId : "") + ".json";
+    }
+
+    public void storeDateOfCrawlAndTweetsInDb(String dateOfCrawl, String tweets, int tweetCount) throws SQLException {
+            Connection con = JDBCConnectionManager.getConnection();
+
+            PreparedStatement pstmt = con.prepareStatement("REPLACE INTO ar_tweets(dateOfCrawl,allTweets,nbOfTweets) VALUES(?,?,?)");
+            pstmt.setString(1, dateOfCrawl);
+            pstmt.setString(2, tweets);
+            pstmt.setInt(3, tweetCount);
+
+            pstmt.execute();
+            pstmt.close();
+
+            con.close();
     }
 }

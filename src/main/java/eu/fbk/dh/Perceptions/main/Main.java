@@ -1,7 +1,9 @@
 package eu.fbk.dh.Perceptions.main;
 
 import eu.fbk.dh.Perceptions.crawler.TwitterCrawler;
+import eu.fbk.dh.Perceptions.database.JDBCConnectionManager;
 
+import java.sql.Connection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +15,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Main {
     public static void main(String[] args) {
+
+        Connection con = JDBCConnectionManager.getConnection();
 
         int cores = Runtime.getRuntime().availableProcessors(); //get cores for multithreading
         if (cores > 4) {
