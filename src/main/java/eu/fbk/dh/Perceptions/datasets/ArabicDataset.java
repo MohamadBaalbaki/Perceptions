@@ -18,6 +18,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * @author Mohamad Baalbaki
@@ -70,14 +71,31 @@ public class ArabicDataset extends ExcelFile {
     public static void addTweetsFromDatabaseToDataset() throws SQLException, IOException, InvalidFormatException {
         Connection con = JDBCConnectionManager.getConnection();
         ArrayList<Tweet> allTweets = getAllTweets();
-        ArrayList<String> alreadyAddedTweetsIds = new ArrayList<String>();
+        ArrayList<String> alreadyAddedTweetsIdsAsList=new ArrayList<>();
+
         Workbook workbook = WorkbookFactory.create(new File(ArabicDataset.class.getClassLoader().getResource("ar_dataset.xlsx").getFile()));
         Sheet sheet = workbook.getSheetAt(0);
-        int currentRowIndex = 1;
 
-        for (int i = 0; i < allTweets.size(); i++) {
+        PreparedStatement getCountOfAlreadyAddedTweetsPS=con.prepareStatement("SELECT COUNT(tweetId) from ar_already_seen_tweets");
+        ResultSet getCountOfAlreadyAddedTweetsRS=getCountOfAlreadyAddedTweetsPS.executeQuery();
+        int countOfAlreadyAddedTweets=-2; //initializing
+        while(getCountOfAlreadyAddedTweetsRS.next()){
+            countOfAlreadyAddedTweets=getCountOfAlreadyAddedTweetsRS.getInt(1);
+        }
+        int startFromRow=countOfAlreadyAddedTweets+1;
+
+        PreparedStatement getAlreadyAddedTweetsIdsPS=con.prepareStatement("SELECT tweetId from ar_already_seen_tweets");
+        ResultSet alreadyAddedTweetsIdsRS=getAlreadyAddedTweetsIdsPS.executeQuery();
+        while(alreadyAddedTweetsIdsRS.next()){
+            alreadyAddedTweetsIdsAsList.add(alreadyAddedTweetsIdsRS.getString("tweetId")); //local copy of db info
+        }
+
+        final ArrayList<String> egyptianWords = new ArrayList<String>(Arrays.asList("مصر", "سكندرية", "قاهرة", "جيزة", "egypt", "cairo", "alexandria", "giza", "égypte", "caire", "alexandrie")); //these are the different ways egypt can be written in the location
+        final ArrayList<String> algerianWords = new ArrayList<String>(Arrays.asList("جزائر", "وهران", "algiers", "alger", "oran", "algérie", "algeri")); //these are the different ways algeria can be written in the location
+        final ArrayList<String> tunisianWords = new ArrayList<String>(Arrays.asList("تونس", "tunis", "sfax")); //these are the different ways tunisia can be written in the location
+
+        for (int i = countOfAlreadyAddedTweets; i < allTweets.size(); i++) {
             RetweetedStatus retweetedStatus = allTweets.get(i).getRetweetedStatus();
-
             boolean isEmpty = retweetedStatus.isEmpty(); //to determine: not a retweet
             if (isEmpty) {
                 System.out.println("This is an original tweet whose ID: " + allTweets.get(i).getTweetId());
@@ -86,40 +104,77 @@ public class ArabicDataset extends ExcelFile {
                 System.out.println("This is a retweet of a tweet whose original ID: " + retweetedStatus.getOriginalTweetId());
                 System.out.println("Original Tweet: " + retweetedStatus.getOriginalTweetString());
             }
-
             //TODO this is getting the dataset from target/classes/ar_dataset.xlsx, change it to take it from resources folder
-            Row row = sheet.createRow(i + currentRowIndex); //creates a new row
 
-            Cell tweetIdCell = row.createCell(0); //creates a new cell
-            tweetIdCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
-            Cell tweetStringCell = row.createCell(1); //creates a new cell
-            tweetStringCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
-            Cell tweetLocationCell = row.createCell(2); //creates a new cell
-            tweetLocationCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
+            if (!isEmpty) { //if this tweet is a retweet
+                System.out.println("!is Empty and original tweet not added: "+!alreadyAddedTweetsIdsAsList.contains(retweetedStatus.getOriginalTweetId()));
+                if ((egyptianWords.parallelStream().anyMatch(retweetedStatus.getOriginalUser().getLocation().toLowerCase()::contains) //if the location is known in one of our arraylists (check if the string contains any of the cities in the arraylist)
+                        || algerianWords.parallelStream().anyMatch(retweetedStatus.getOriginalUser().getLocation().toLowerCase()::contains)
+                        || tunisianWords.parallelStream().anyMatch(retweetedStatus.getOriginalUser().getLocation().toLowerCase()::contains))
+                        && (!alreadyAddedTweetsIdsAsList.contains(retweetedStatus.getOriginalTweetId()))) { //if the original tweet was not already added to the dataset
 
-            if (!isEmpty && !alreadyAddedTweetsIds.contains(retweetedStatus.getOriginalTweetId())) { //now we want to check if it is a retweet, put the original tweet in the dataset
-                tweetIdCell.setCellValue(retweetedStatus.getOriginalTweetId()); //added the original tweet id to the dataset
-                alreadyAddedTweetsIds.add(retweetedStatus.getOriginalTweetId()); //added it to the list to not re-add it again later
-                tweetStringCell.setCellValue(retweetedStatus.getOriginalTweetString()); //added the original tweet string to the dataset
-                tweetLocationCell.setCellValue(retweetedStatus.getOriginalUser().getLocation()); //added the original tweet location to the dataset
-            } else if (isEmpty && !alreadyAddedTweetsIds.contains(allTweets.get(i).getTweetId())) { //if this tweet has not been retweeted
-                tweetIdCell.setCellValue(allTweets.get(i).getTweetId()); //added the tweet id to the dataset
-                alreadyAddedTweetsIds.add(allTweets.get(i).getTweetId()); //added it to the list to not re-add it again later
-                tweetStringCell.setCellValue(allTweets.get(i).getTweetString()); //added the tweet string to the dataset
-                tweetLocationCell.setCellValue(allTweets.get(i).getTweetLocation()); //added the tweet location to the dataset
+                    Row row = sheet.createRow(i + startFromRow); //creates a new row
+
+                    System.out.println("Created row: " + (i + startFromRow));
+
+                    Cell tweetIdCell = row.createCell(0); //creates a new cell
+                    tweetIdCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
+                    Cell tweetStringCell = row.createCell(1); //creates a new cell
+                    tweetStringCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
+                    Cell tweetLocationCell = row.createCell(2); //creates a new cell
+                    tweetLocationCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
+
+                    tweetIdCell.setCellValue(retweetedStatus.getOriginalTweetId()); //added the original tweet id to the dataset
+                    alreadyAddedTweetsIdsAsList.add(retweetedStatus.getOriginalTweetId()); //added it to the list to not re-add it again later
+                    PreparedStatement addTweetIdToDbPS=con.prepareStatement("INSERT INTO ar_already_seen_tweets values (?)");
+                    addTweetIdToDbPS.setString(1,retweetedStatus.getOriginalTweetId());
+                    addTweetIdToDbPS.executeUpdate();
+
+                    tweetStringCell.setCellValue(retweetedStatus.getOriginalTweetString()); //added the original tweet string to the dataset
+                    tweetLocationCell.setCellValue(retweetedStatus.getOriginalUser().getLocation()); //added the original tweet location to the dataset
+                } else {
+                    System.out.println("SKIPPED FOR NOT SATISFYING CONDITIONS");
+                    startFromRow--; //if an index was skipped do not add an empty line
+                }
+            } else if (isEmpty) { //if this tweet is not a retweet
+                System.out.println("is Empty and original tweet not added: "+!alreadyAddedTweetsIdsAsList.contains(retweetedStatus.getOriginalTweetId()));
+                if ((egyptianWords.parallelStream().anyMatch(allTweets.get(i).getTweetLocation().toLowerCase()::contains)
+                        || algerianWords.parallelStream().anyMatch(allTweets.get(i).getTweetLocation().toLowerCase()::contains)
+                        || tunisianWords.parallelStream().anyMatch(allTweets.get(i).getTweetLocation().toLowerCase()::contains))
+                        && (!alreadyAddedTweetsIdsAsList.contains(allTweets.get(i).getTweetId()))) {
+
+                    Row row = sheet.createRow(i + startFromRow); //creates a new row
+
+                    System.out.println("Created row: " + (i + startFromRow));
+
+                    Cell tweetIdCell = row.createCell(0); //creates a new cell
+                    tweetIdCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
+                    Cell tweetStringCell = row.createCell(1); //creates a new cell
+                    tweetStringCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
+                    Cell tweetLocationCell = row.createCell(2); //creates a new cell
+                    tweetLocationCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
+
+                    tweetIdCell.setCellValue(allTweets.get(i).getTweetId()); //added the tweet id to the dataset
+                    alreadyAddedTweetsIdsAsList.add(allTweets.get(i).getTweetId()); //added it to the list to not re-add it again later
+                    PreparedStatement addTweetIdToDbPS=con.prepareStatement("INSERT INTO ar_already_seen_tweets values (?)");
+                    addTweetIdToDbPS.setString(1,allTweets.get(i).getTweetId());
+                    addTweetIdToDbPS.executeUpdate();
+                    tweetStringCell.setCellValue(allTweets.get(i).getTweetString()); //added the tweet string to the dataset
+                    tweetLocationCell.setCellValue(allTweets.get(i).getTweetLocation()); //added the tweet location to the dataset
+                } else {
+                    System.out.println("SKIPPED FOR NOT SATISFYING CONDITIONS");
+                    startFromRow--; //if an index was skipped do not add an empty line
+                }
             }
-                /*Cell inFavorOfMigrationCell = row.getCell(3); //cell of the in favor of migration
-                inFavorOfMigrationCell.setCellType(CellType.NUMERIC); //set the type of the cell to numeric so that we avoid errors
-                inFavorOfMigrationCell.setCellValue(allTweets.get(i).getInFavorOfMigration()); //added the in favor of migration to the dataset*/
 
-            else currentRowIndex--; //if an index was skipped do not add an empty line
-            System.out.println(alreadyAddedTweetsIds.toString());
+            System.out.println(alreadyAddedTweetsIdsAsList.toString());
             System.out.println();
         }
-        System.out.println("Original Tweets size: "+allTweets.size());
-        System.out.println("Dataset Tweets size: "+alreadyAddedTweetsIds.size());
-        int discardedTweets=allTweets.size()-alreadyAddedTweetsIds.size();
-        System.out.println("Discarded Tweets size: "+discardedTweets+" => "+(((double)discardedTweets/(double)allTweets.size())*100)+"% loss");
+
+        System.out.println("Total number of crawled tweets: " + allTweets.size());
+        System.out.println("Total number of relevant tweets added to dataset: " + alreadyAddedTweetsIdsAsList.size());
+        int discardedTweets = allTweets.size() - alreadyAddedTweetsIdsAsList.size();
+        System.out.println("Total number of irrelevant discarded tweets: " + discardedTweets + " => " + (((double) discardedTweets / (double) allTweets.size()) * 100) + "% loss");
 
         FileOutputStream fileOut = new FileOutputStream("ArabicJsonFiles/newar_dataset.xlsx");
         workbook.write(fileOut);
