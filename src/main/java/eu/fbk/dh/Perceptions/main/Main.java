@@ -3,7 +3,9 @@ package eu.fbk.dh.Perceptions.main;
 import eu.fbk.dh.Perceptions.crawler.TwitterCrawler;
 import eu.fbk.dh.Perceptions.database.JDBCConnectionManager;
 import eu.fbk.dh.Perceptions.datasets.ArabicDataset;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
@@ -16,11 +18,11 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Main {
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws SQLException, IOException, InvalidFormatException {
 
         Connection con = JDBCConnectionManager.getConnection();
 
-        ////////////////////////////////CRAWLING///////////////////////////////////////////////// EVERY 7 days
+        ////////////////////////////////CRAWLING///////////////////////////////////////////////// EVERY 8 days
         /*int cores = Runtime.getRuntime().availableProcessors(); //get cores for multithreading
         if (cores > 4) {
             cores = cores / 2;
@@ -41,9 +43,7 @@ public class Main {
 
         //Todo: add tweets to a dataset in an excel file (discard repetitions) and manually classify them
 
-        ArabicDataset arabicDataset=new ArabicDataset(); //create the arabic dataset object
-        arabicDataset.addUnseenTweetsInformationFromDatabase(); //load the tweets and their information to the dataset from the database
-
+        ArabicDataset.addTweetsFromDatabaseToDataset(); //load the tweets and their information to the dataset from the database
 
 
         con.close();
