@@ -90,10 +90,10 @@ public class ArabicDataset extends ExcelFile {
             alreadyAddedTweetsIdsAsList.add(alreadyAddedTweetsIdsRS.getString("tweetId")); //local copy of db info
         }
 
-        final ArrayList<String> egyptianWords = new ArrayList<String>(Arrays.asList("مصر", "سكندرية", "قاهرة", "جيزة", "egypt", "cairo", "alexandria", "giza", "égypte", "caire", "alexandrie")); //these are the different ways egypt can be written in the location
+        /*final ArrayList<String> egyptianWords = new ArrayList<String>(Arrays.asList("مصر", "سكندرية", "قاهرة", "جيزة", "egypt", "cairo", "alexandria", "giza", "égypte", "caire", "alexandrie")); //these are the different ways egypt can be written in the location
         final ArrayList<String> algerianWords = new ArrayList<String>(Arrays.asList("جزائر", "وهران", "algiers", "alger", "oran", "algérie", "algeri")); //these are the different ways algeria can be written in the location
         final ArrayList<String> tunisianWords = new ArrayList<String>(Arrays.asList("تونس", "tunis", "sfax")); //these are the different ways tunisia can be written in the location
-
+*/
         for (int i = countOfAlreadyAddedTweets; i < allTweets.size(); i++) {
             RetweetedStatus retweetedStatus = allTweets.get(i).getRetweetedStatus();
             boolean isEmpty = retweetedStatus.isEmpty(); //to determine: not a retweet
@@ -108,10 +108,10 @@ public class ArabicDataset extends ExcelFile {
 
             if (!isEmpty) { //if this tweet is a retweet
                 System.out.println("!is Empty and original tweet not added: "+!alreadyAddedTweetsIdsAsList.contains(retweetedStatus.getOriginalTweetId()));
-                if ((egyptianWords.parallelStream().anyMatch(retweetedStatus.getOriginalUser().getLocation().toLowerCase()::contains) //if the location is known in one of our arraylists (check if the string contains any of the cities in the arraylist)
+                if (/*(egyptianWords.parallelStream().anyMatch(retweetedStatus.getOriginalUser().getLocation().toLowerCase()::contains) //if the location is known in one of our arraylists (check if the string contains any of the cities in the arraylist)
                         || algerianWords.parallelStream().anyMatch(retweetedStatus.getOriginalUser().getLocation().toLowerCase()::contains)
                         || tunisianWords.parallelStream().anyMatch(retweetedStatus.getOriginalUser().getLocation().toLowerCase()::contains))
-                        && (!alreadyAddedTweetsIdsAsList.contains(retweetedStatus.getOriginalTweetId()))) { //if the original tweet was not already added to the dataset
+                        &&*/ (!alreadyAddedTweetsIdsAsList.contains(retweetedStatus.getOriginalTweetId()))) { //if the original tweet was not already added to the dataset
 
                     Row row = sheet.createRow(i + startFromRow); //creates a new row
 
@@ -138,10 +138,10 @@ public class ArabicDataset extends ExcelFile {
                 }
             } else if (isEmpty) { //if this tweet is not a retweet
                 System.out.println("is Empty and original tweet not added: "+!alreadyAddedTweetsIdsAsList.contains(retweetedStatus.getOriginalTweetId()));
-                if ((egyptianWords.parallelStream().anyMatch(allTweets.get(i).getTweetLocation().toLowerCase()::contains)
+                if (/*(egyptianWords.parallelStream().anyMatch(allTweets.get(i).getTweetLocation().toLowerCase()::contains)
                         || algerianWords.parallelStream().anyMatch(allTweets.get(i).getTweetLocation().toLowerCase()::contains)
                         || tunisianWords.parallelStream().anyMatch(allTweets.get(i).getTweetLocation().toLowerCase()::contains))
-                        && (!alreadyAddedTweetsIdsAsList.contains(allTweets.get(i).getTweetId()))) {
+                        &&*/ (!alreadyAddedTweetsIdsAsList.contains(allTweets.get(i).getTweetId()))) {
 
                     Row row = sheet.createRow(i + startFromRow); //creates a new row
 
