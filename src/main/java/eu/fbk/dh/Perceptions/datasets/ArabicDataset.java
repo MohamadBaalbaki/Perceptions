@@ -82,7 +82,7 @@ public class ArabicDataset extends ExcelFile {
         while(getCountOfAlreadyAddedTweetsRS.next()){
             countOfAlreadyAddedTweets=getCountOfAlreadyAddedTweetsRS.getInt(1);
         }
-        int startFromRow=countOfAlreadyAddedTweets+1;
+        int startFromRow=countOfAlreadyAddedTweets;
 
         PreparedStatement getAlreadyAddedTweetsIdsPS=con.prepareStatement("SELECT tweetId from ar_already_seen_tweets");
         ResultSet alreadyAddedTweetsIdsRS=getAlreadyAddedTweetsIdsPS.executeQuery();
@@ -113,9 +113,11 @@ public class ArabicDataset extends ExcelFile {
                         || tunisianWords.parallelStream().anyMatch(retweetedStatus.getOriginalUser().getLocation().toLowerCase()::contains))
                         &&*/ (!alreadyAddedTweetsIdsAsList.contains(retweetedStatus.getOriginalTweetId()))) { //if the original tweet was not already added to the dataset
 
-                    Row row = sheet.createRow(i + startFromRow); //creates a new row
+                    startFromRow++;
 
-                    System.out.println("Created row: " + (i + startFromRow));
+                    Row row = sheet.createRow(startFromRow); //creates a new row
+
+                    System.out.println("Created row: " + (startFromRow));
 
                     Cell tweetIdCell = row.createCell(0); //creates a new cell
                     tweetIdCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
@@ -132,9 +134,9 @@ public class ArabicDataset extends ExcelFile {
 
                     tweetStringCell.setCellValue(retweetedStatus.getOriginalTweetString()); //added the original tweet string to the dataset
                     tweetLocationCell.setCellValue(retweetedStatus.getOriginalUser().getLocation()); //added the original tweet location to the dataset
+
                 } else {
                     System.out.println("SKIPPED FOR NOT SATISFYING CONDITIONS");
-                    startFromRow--; //if an index was skipped do not add an empty line
                 }
             } else if (isEmpty) { //if this tweet is not a retweet
                 System.out.println("is Empty and original tweet not added: "+!alreadyAddedTweetsIdsAsList.contains(retweetedStatus.getOriginalTweetId()));
@@ -143,9 +145,11 @@ public class ArabicDataset extends ExcelFile {
                         || tunisianWords.parallelStream().anyMatch(allTweets.get(i).getTweetLocation().toLowerCase()::contains))
                         &&*/ (!alreadyAddedTweetsIdsAsList.contains(allTweets.get(i).getTweetId()))) {
 
-                    Row row = sheet.createRow(i + startFromRow); //creates a new row
+                    startFromRow++;
 
-                    System.out.println("Created row: " + (i + startFromRow));
+                    Row row = sheet.createRow(startFromRow); //creates a new row
+
+                    System.out.println("Created row: " + (startFromRow));
 
                     Cell tweetIdCell = row.createCell(0); //creates a new cell
                     tweetIdCell.setCellType(CellType.STRING); //set the type of the cell to string so that we avoid errors
@@ -161,9 +165,9 @@ public class ArabicDataset extends ExcelFile {
                     addTweetIdToDbPS.executeUpdate();
                     tweetStringCell.setCellValue(allTweets.get(i).getTweetString()); //added the tweet string to the dataset
                     tweetLocationCell.setCellValue(allTweets.get(i).getTweetLocation()); //added the tweet location to the dataset
+
                 } else {
                     System.out.println("SKIPPED FOR NOT SATISFYING CONDITIONS");
-                    startFromRow--; //if an index was skipped do not add an empty line
                 }
             }
 

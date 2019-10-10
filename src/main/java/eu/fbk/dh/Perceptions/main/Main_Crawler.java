@@ -17,13 +17,13 @@ import java.util.concurrent.TimeUnit;
  */
 
 
-public class Main {
+public class Main_Crawler {
     public static void main(String[] args) throws SQLException, IOException, InvalidFormatException {
 
         Connection con = JDBCConnectionManager.getConnection();
 
         ////////////////////////////////CRAWLING///////////////////////////////////////////////// EVERY 8 days
-        /*int cores = Runtime.getRuntime().availableProcessors(); //get cores for multithreading
+        int cores = Runtime.getRuntime().availableProcessors(); //get cores for multithreading
         if (cores > 4) {
             cores = cores / 2;
         }
@@ -38,13 +38,8 @@ public class Main {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }*/
+        }
         ////////////////////////////////CRAWLING/////////////////////////////////////////////////
-
-        //Todo: add tweets to a dataset in an excel file (discard repetitions) and manually classify them
-
-        //ArabicDataset.addTweetsFromDatabaseToDataset(); //load the tweets and their information to the dataset from the database
-
 
         con.close();
     }
