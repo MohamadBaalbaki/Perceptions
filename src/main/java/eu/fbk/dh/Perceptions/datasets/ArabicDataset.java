@@ -6,6 +6,10 @@ import eu.fbk.dh.Perceptions.models.ExcelFile;
 import eu.fbk.dh.Perceptions.models.RetweetedStatus;
 import eu.fbk.dh.Perceptions.models.Tweet;
 import eu.fbk.dh.Perceptions.models.User;
+import net.ricecode.similarity.LevenshteinDistanceStrategy;
+import net.ricecode.similarity.SimilarityStrategy;
+import net.ricecode.similarity.StringSimilarityService;
+import net.ricecode.similarity.StringSimilarityServiceImpl;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -189,4 +193,45 @@ public class ArabicDataset extends ExcelFile {
     }
 
 
+    public static void getTweetsStringSimilarities() throws IOException, InvalidFormatException {
+        ExcelFile excelFile = new ExcelFile(new File("/home/baalbaki/Desktop/checkrepetitions.xlsx"));
+        XSSFSheet sheet = excelFile.getSheet();
+        int numberOfRows = excelFile.getRows();
+        int numberOfColumns = sheet.getRow(0).getPhysicalNumberOfCells();
+        System.out.println(numberOfRows);
+
+        SimilarityStrategy strategy = new LevenshteinDistanceStrategy();
+        StringSimilarityService service = new StringSimilarityServiceImpl(strategy);
+
+        for (int i = 1; i < numberOfRows; i++) {
+            for (int j = i+1; j < numberOfRows; j++) {
+                //System.out.println(i+" , "+j);
+                String firstTweet=sheet.getRow(i).getCell(1).toString();
+                String secondTweet=sheet.getRow(j).getCell(1).toString();
+                double similarityScore = service.score(firstTweet, secondTweet);
+                if(similarityScore>0.5){
+                    System.out.println("FOUND!!!");
+                    System.out.println(similarityScore);
+                    System.out.println("Rows: i="+(i+1)+", j="+(j+1));
+                    System.out.println(firstTweet);
+                    System.out.println();
+                    System.out.println(secondTweet);
+                    System.out.println("--------------------------------------");
+                    System.out.println();
+                }
+
+                /*int pos = (int) Math.round(sheet.getRow(i).getCell(j).getNumericCellValue());
+                int neg = (int) Math.round(sheet.getRow(i).getCell(j + 1).getNumericCellValue());
+                String word = sheet.getRow(i).getCell(1).toString();
+
+                //System.out.println(word+": "+pos+", "+neg);
+                if (neg == 1 && pos == 0) { //pos==0 is not necessary but just to make sure
+                    negativeWords.add(word.toLowerCase());
+                } else if (pos == 1 && neg == 0) {
+                    positiveWords.add(word.toLowerCase());
+                }*/
+            }
+        }
+
+    }
 }

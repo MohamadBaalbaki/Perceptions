@@ -23,7 +23,7 @@ public class Main_Crawler {
         Connection con = JDBCConnectionManager.getConnection();
 
         ////////////////////////////////CRAWLING///////////////////////////////////////////////// EVERY 8 days
-        int cores = Runtime.getRuntime().availableProcessors(); //get cores for multithreading
+        /*int cores = Runtime.getRuntime().availableProcessors(); //get cores for multithreading
         if (cores > 4) {
             cores = cores / 2;
         }
@@ -38,7 +38,7 @@ public class Main_Crawler {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
+        }*/
         ////////////////////////////////CRAWLING/////////////////////////////////////////////////
 
         con.close();

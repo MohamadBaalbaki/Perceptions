@@ -18,7 +18,7 @@ public class Main_DatasetPopulator {
         Connection con = JDBCConnectionManager.getConnection();
 
         //Todo: add tweets to a dataset in an excel file (discard repetitions) and manually classify them
-        ArabicDataset.addTweetsFromDatabaseToDataset(); //load the tweets and their information to the dataset from the database
+        //ArabicDataset.addTweetsFromDatabaseToDataset(); //load the tweets and their information to the dataset from the database
 
         con.close();
     }
