@@ -12,9 +12,11 @@ import net.ricecode.similarity.StringSimilarityService;
 import net.ricecode.similarity.StringSimilarityServiceImpl;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
@@ -23,6 +25,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * @author Mohamad Baalbaki
@@ -194,14 +197,20 @@ public class ArabicDataset extends ExcelFile {
 
 
     public static void getTweetsStringSimilarities() throws IOException, InvalidFormatException {
-        ExcelFile excelFile = new ExcelFile(new File("/home/baalbaki/Desktop/checkrepetitions.xlsx"));
-        XSSFSheet sheet = excelFile.getSheet();
+        File file=new File(ArabicDataset.class.getClassLoader().getResource("ar_dataset.xlsx").getFile());
+        ExcelFile excelFile = new ExcelFile(file);
+        Workbook workbook = WorkbookFactory.create(file);
+        Sheet sheet = workbook.getSheetAt(0);
+        //XSSFSheet sheet = excelFile.getSheet();
         int numberOfRows = excelFile.getRows();
         int numberOfColumns = sheet.getRow(0).getPhysicalNumberOfCells();
-        System.out.println(numberOfRows);
-
+        System.out.println(numberOfRows+" sheet rows found");
+        System.out.println("--------------------------------------");
+        System.out.println();
         SimilarityStrategy strategy = new LevenshteinDistanceStrategy();
         StringSimilarityService service = new StringSimilarityServiceImpl(strategy);
+
+        ArrayList<Integer> tweetIndicesToBeDeleted=new ArrayList<>();
 
         for (int i = 1; i < numberOfRows; i++) {
             for (int j = i+1; j < numberOfRows; j++) {
@@ -210,28 +219,56 @@ public class ArabicDataset extends ExcelFile {
                 String secondTweet=sheet.getRow(j).getCell(1).toString();
                 double similarityScore = service.score(firstTweet, secondTweet);
                 if(similarityScore>0.5){
-                    System.out.println("FOUND!!!");
-                    System.out.println(similarityScore);
-                    System.out.println("Rows: i="+(i+1)+", j="+(j+1));
+                    System.out.println("FOUND!!! Levenshtein="+similarityScore);
+                    System.out.println("Real rows on sheet: i="+(i+1)+", j="+(j+1));
                     System.out.println(firstTweet);
                     System.out.println();
                     System.out.println(secondTweet);
+                    System.out.println();
+                    if(!tweetIndicesToBeDeleted.contains((j))) { //if the arraylist doesn't contain that row (in code) already
+                        System.out.println("=> Code row "+j+" will be deleted later");
+                        tweetIndicesToBeDeleted.add(j); //add it to the list to be later deleted
+                    }
                     System.out.println("--------------------------------------");
                     System.out.println();
                 }
 
-                /*int pos = (int) Math.round(sheet.getRow(i).getCell(j).getNumericCellValue());
-                int neg = (int) Math.round(sheet.getRow(i).getCell(j + 1).getNumericCellValue());
-                String word = sheet.getRow(i).getCell(1).toString();
-
-                //System.out.println(word+": "+pos+", "+neg);
-                if (neg == 1 && pos == 0) { //pos==0 is not necessary but just to make sure
-                    negativeWords.add(word.toLowerCase());
-                } else if (pos == 1 && neg == 0) {
-                    positiveWords.add(word.toLowerCase());
-                }*/
             }
         }
-
+        Collections.sort(tweetIndicesToBeDeleted,Collections.reverseOrder()); //extremely important, sorting in descending order to not worry about changing indices
+        System.out.println(tweetIndicesToBeDeleted.toString());
+        deleteTweetsStringSimilarities(workbook,sheet,tweetIndicesToBeDeleted);
     }
+
+    private static void deleteTweetsStringSimilarities(Workbook workbook,Sheet sheet,ArrayList<Integer> tweetIndicesToBeDeleted) throws IOException {
+        int sizeOfTweetsToBeDeleted=tweetIndicesToBeDeleted.size();
+
+        System.out.println(sizeOfTweetsToBeDeleted+" rows will be deleted now");
+
+        for(int i=0;i<sizeOfTweetsToBeDeleted;i++){
+            System.out.println("Removing sheet row: "+(tweetIndicesToBeDeleted.get(i)+1)+" with id: "+(sheet.getRow(tweetIndicesToBeDeleted.get(i)).getCell(0)));
+            removeRow(sheet,tweetIndicesToBeDeleted.get(i));
+            System.out.println("DONE!");
+        }
+
+        FileOutputStream fileOut = new FileOutputStream("ArabicJsonFiles/newar_dataset.xlsx");
+        workbook.write(fileOut);
+        fileOut.close();
+        workbook.close();
+    }
+
+    public static void removeRow(Sheet sheet, int rowIndex) {
+        int lastRowNum=sheet.getLastRowNum();
+        if(rowIndex>=0&&rowIndex<lastRowNum){
+            sheet.shiftRows(rowIndex+1,lastRowNum, -1);
+        }
+        if(rowIndex==lastRowNum){
+            Row removingRow=sheet.getRow(rowIndex);
+            if(removingRow!=null){
+                sheet.removeRow(removingRow);
+            }
+        }
+    }
+
+
 }

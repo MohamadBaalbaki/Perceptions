@@ -16,6 +16,6 @@ import java.io.IOException;
 
 public class Main_StringSimilarity {
     public static void main(String[] args) throws IOException, InvalidFormatException {
-        ArabicDataset.getTweetsStringSimilarities();
+        //ArabicDataset.getTweetsStringSimilarities();
     }
 }
