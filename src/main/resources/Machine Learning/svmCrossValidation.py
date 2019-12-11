@@ -23,6 +23,7 @@ def CleanStopWords (sentence):
 		stop_words = stopwords.words('arabic')  
 		sentenceSplitted = sentence.split(" ")  
 		sentence = [w for w in sentenceSplitted if w not in stop_words]
+		#print("Cleaned tweet: ",sentence)
 		return(sentence)
 
 
@@ -33,8 +34,8 @@ def ExtractVectors(sentence, removeStopwords):
 			sentence = ' '.join(sentence)
 		sv = model_ft.get_sentence_vector(sentence)
 		#vector = sv.reshape(1, -1)
+		#print("Extracted vector: ",sv)
 		return(sv) #it was return vector
-
 
 print("Loading FT model")
 model_ft  = fasttext.load_model('/home/baalbaki/Desktop/FastText/cc.ar.300.bin')
@@ -48,9 +49,9 @@ dataset = pd.read_csv(r'dataset2.csv')
 X, y = dataset.tweet, dataset.perception #X now holds the tweets and y holds the labels
 training_tweets, testing_tweets, training_labels, testing_labels = train_test_split(X, y, test_size=0.2, random_state=42)
 
-#print("Length of training tweets: ",len(training_tweets))
+print("Length of training tweets: ",len(training_tweets))
 #print("Length of training labels: ",len(training_labels))
-#print("Length of testing tweets: ",len(testing_tweets))
+print("Length of testing tweets: ",len(testing_tweets))
 #print("Length of testing labels: ",len(testing_labels))
 
 #Transforming training tweets into vectors
@@ -99,7 +100,7 @@ except ImportError:
     legacy = True
     
 if legacy:
-    kf = KFold(len(y_train),n_folds=10, shuffle=True, random_state=42)
+    kf = KFold(len(training_labels),n_folds=10, shuffle=True, random_state=42)
 else:
     kf = KFold(n_splits=10, shuffle=True, random_state=42)
 
@@ -121,13 +122,14 @@ for gamma in gamma_values:
     
     # Compute the mean accuracy and keep track of it
     accuracy_score = scores.mean()
+    #print("Gamma: ",str(gamma))
+    #print("Accuracy: ",str(accuracy_score))
     accuracy_scores.append(accuracy_score)
 
 # Get the gamma with highest mean accuracy
 best_index = np.array(accuracy_scores).argmax()
 best_gamma = gamma_values[best_index]
 print("The best gamma is: ",str(best_gamma))
-
 # Train over the full training set with the best gamma
 clf = SVC(C=10, kernel='rbf', gamma=best_gamma)
 clf.fit(training_tweets_vectors, training_labels_array)

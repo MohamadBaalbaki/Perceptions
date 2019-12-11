@@ -23,6 +23,7 @@ def CleanStopWords (sentence):
 		stop_words = stopwords.words('arabic')  
 		sentenceSplitted = sentence.split(" ")  
 		sentence = [w for w in sentenceSplitted if w not in stop_words]
+		#print("Cleaned tweet: ",sentence)
 		return(sentence)
 
 
@@ -33,6 +34,7 @@ def ExtractVectors(sentence, removeStopwords):
 			sentence = ' '.join(sentence)
 		sv = model_ft.get_sentence_vector(sentence)
 		#vector = sv.reshape(1, -1)
+		#print("Extracted vector: ",sv)
 		return(sv) #it was return vector
 
 
@@ -49,9 +51,9 @@ X, y = dataset.tweet, dataset.perception #X now holds the tweets and y holds the
 training_tweets, testing_tweets, training_labels, testing_labels = train_test_split(X, y, test_size=0.2, random_state=42)
 
 print("Length of training tweets: ",len(training_tweets))
-print("Length of training labels: ",len(training_labels))
+#print("Length of training labels: ",len(training_labels))
 print("Length of testing tweets: ",len(testing_tweets))
-print("Length of testing labels: ",len(testing_labels))
+#print("Length of testing labels: ",len(testing_labels))
 
 #Transforming training tweets into vectors
 training_tweets_vectors=[]

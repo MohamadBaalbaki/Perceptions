@@ -23,6 +23,7 @@ def CleanStopWords (sentence):
 		stop_words = stopwords.words('arabic')  
 		sentenceSplitted = sentence.split(" ")  
 		sentence = [w for w in sentenceSplitted if w not in stop_words]
+		#print("Cleaned tweet: ",sentence)
 		return(sentence)
 
 
@@ -33,6 +34,7 @@ def ExtractVectors(sentence, removeStopwords):
 			sentence = ' '.join(sentence)
 		sv = model_ft.get_sentence_vector(sentence)
 		#vector = sv.reshape(1, -1)
+		#print("Extracted vector: ",sv)
 		return(sv) #it was return vector
 
 
@@ -126,7 +128,7 @@ possible_parameters = {
 
 }
 
-#svc = SVC(kernel='rbf')
+#svc = svm.SVC()
 
 #Run gridsearch on validation, and once you find the best configuration run it on the test set
 # The GridSearchCV is itself a classifier
@@ -134,14 +136,15 @@ possible_parameters = {
 # and then we use it to predict on the test set
 clf = GridSearchCV(SVC(), possible_parameters, n_jobs=4, cv=3) # n_jobs=4 means we parallelize the search over 4 threads
 clf.fit(validation_tweets_vectors, validation_labels_array)
+print("Best parameters: ")
+print(clf.best_params_)
+#predicted_labels = clf.predict(validation_tweets_vectors)
 
-predicted_labels = clf.predict(validation_tweets_vectors)
+#report = metrics.classification_report(validation_labels_array, predicted_labels)
 
-report = metrics.classification_report(validation_labels_array, predicted_labels)
+#print(report)
 
-print(report)
-
-print("Accuracy of the model after grid search *VALIDATION: ",metrics.accuracy_score(validation_labels_array, predicted_labels)) #This is the final accuracy
+#print("Accuracy of the model after grid search *VALIDATION: ",metrics.accuracy_score(validation_labels_array, predicted_labels)) #This is the final accuracy
 
 #THIS IS THE CORRECT WAY TO DO IT
 predicted_labels = clf.predict(testing_tweets_vectors)
