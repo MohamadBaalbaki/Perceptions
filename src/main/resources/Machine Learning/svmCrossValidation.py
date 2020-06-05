@@ -18,17 +18,47 @@ from gensim.models.wrappers import FastText
 import re
 import requests
 import sys
+from emoji import UNICODE_EMOJI
 
+#Step 3
+def CleanEmojis(sentence):
+	emojiList=list(UNICODE_EMOJI.keys())
+	for emojiIndex in range(len(emojiList)):
+		for sentenceIndex in range(len(sentence)):
+			if emojiList[emojiIndex] in sentence[sentenceIndex]:
+				sentence[sentenceIndex] = sentence[sentenceIndex].replace(emojiList[emojiIndex],'')
+	for i in range(len(sentence)):
+		if bool(re.search(r'\\u.{4}',sentence[i])):
+			#sentence[i]=re.sub(r'\\u.{4}','',sentence[i])
+			del sentence[i]
+	sentence = list(filter(None, sentence)) #remove empty strings
+	#print("After emoji cleaning: ",sentence)
+	#print()
+	return(sentence)
+
+#Step 2
 def CleanStopWords (sentence):
 		stop_words = stopwords.words('arabic')  
 		sentenceSplitted = sentence.split(" ")  
 		sentence = [w for w in sentenceSplitted if w not in stop_words]
-		#print("Cleaned tweet: ",sentence)
+		sentence = CleanEmojis(sentence)
 		return(sentence)
 
-
+#Step 1
 def ExtractVectors(sentence, removeStopwords):
 		sentence = sentence.rstrip()
+		#REMOVE UNNECESSARY STUFF HERE
+		#print("Tweet before: ",sentence)
+		sentence = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+','', sentence) #remove urls
+		sentence = re.sub(r'(?<=^|(?<=[^a-zA-Z0-9-\.]))@([A-Za-z0-9_]+)','', sentence) #remove mentions
+		bad_chars = ['!','$','%','^','&','*','~','«','»','”','“','•','❤','،','…','(',')','〰','-','_','+','=','[',']','{','}','\\','|','.','?',':',';','؟','"'] #remove punctuations
+		for i in bad_chars : 
+    			sentence = sentence.replace(i, '') 		
+		sentence = re.sub(r'[0-9]+','',sentence) #remove english numbers
+		arabic_numbers=['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'] #remove arabic numbers
+		for i in arabic_numbers: 
+    			sentence = sentence.replace(i, '') 
+		#print("Tweet after cleaning from things: ",sentence)
 		if (removeStopwords):
 			sentence = CleanStopWords(sentence)
 			sentence = ' '.join(sentence)
